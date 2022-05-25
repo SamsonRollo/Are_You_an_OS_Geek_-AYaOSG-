@@ -9,22 +9,30 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Random;
 
+import gen.ExcelLoader;
 import gen.GameButton;
 import gen.ImageLoader;
+import gen.Question;
+import gen.QuestionCategory;
+import gen.QuestionGenerator;
 import gen.Score;
 
 import main.MainClass;
 import main.OsirysGame;
 
 public class AYAOG extends OsirysGame implements MouseListener{
+    private final String excelPath = "src/questions.xlsx";
     private BufferedImage BG_IMG;
     private Score score;
     private MainClass mainClass;
     private Font font;
     private QuestionType type;
+    private QuestionCategory categ;
     private boolean start = true;
+    private QuestionGenerator qGen;
 
     public AYAOG(MainClass mainClass, Score score){
         this.mainClass = mainClass;
@@ -44,12 +52,16 @@ public class AYAOG extends OsirysGame implements MouseListener{
         BG_IMG = il.getBuffImage();
         il = null;
 
+        ExcelLoader el = new ExcelLoader(excelPath);
+        el.loadExcel();
+        qGen = new QuestionGenerator(el.getQuestions());
+        
         font = new Font("sans_serif", Font.BOLD, 20);
 
         peekBtn = new GameButton(26, 99, 90, 28);
         copyBtn = new GameButton(26, 135, 90, 28);
         saveBtn = new GameButton(26, 205, 90, 28);
-        GameButton dropBtn = new GameButton(26, 241, 90, 28);
+        dropBtn = new GameButton(26, 241, 90, 28);
         GameButton helpBtn = new GameButton(655, 5, 35, 35);
         lockBtn = new GameButton(596, 308, 84, 84);
 
@@ -125,6 +137,12 @@ public class AYAOG extends OsirysGame implements MouseListener{
         add(dropBtn);
         add(helpBtn);  
         add(lockBtn);     
+
+        setAllBtnEnable(false);
+
+        CategoryPanel cp = new CategoryPanel(this);
+        add(cp);
+        setComponentZOrder(cp, 0);
     }
 
     public void generateQuestion(){
@@ -262,10 +280,8 @@ public class AYAOG extends OsirysGame implements MouseListener{
             String curStr = currentBtn.getActionCommand().toLowerCase();
             curStr = curStr.substring(0, curStr.length()-4);
             autoSetIcons(currentBtn, curStr);
-            System.out.println(curStr);
         }
         autoSetIcons(newBtn, newStr+"lock");
-        System.out.println(newStr);
         this.selectedChoice = newBtn;
         getAYAOG().updateUI();
     }
@@ -278,6 +294,33 @@ public class AYAOG extends OsirysGame implements MouseListener{
         button.setText(text);
         button.setHorizontalTextPosition(GameButton.CENTER);
         button.setVerticalTextPosition(GameButton.CENTER);
+    }
+
+    public void setAllBtnEnable(boolean status){
+        lockBtn.setEnabled(status);
+        peekBtn.setEnabled(status);
+        copyBtn.setEnabled(status);
+        saveBtn.setEnabled(status);
+        dropBtn.setEnabled(status);
+        lockBtn.setEnabled(status);
+        if(trueBtn!=null){
+            trueBtn.setEnabled(status);
+            falseBtn.setEnabled(status);
+        }
+        if(aBtn!=null){
+            aBtn.setEnabled(status);
+            bBtn.setEnabled(status);
+            cBtn.setEnabled(status);
+            dBtn.setEnabled(status);
+        }
+    }
+
+    public void setCategory(QuestionCategory categ){
+        this.categ = categ;
+    }
+
+    public QuestionCategory getCategory(){
+        return this.categ;
     }
 
     public AYAOG getAYAOG(){
@@ -318,7 +361,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
     @Override
     public void mouseReleased(MouseEvent arg0) {}
 
-    private GameButton trueBtn, falseBtn, aBtn, bBtn, cBtn, dBtn, peekBtn, copyBtn, saveBtn, lockBtn;
+    private GameButton trueBtn, falseBtn, aBtn, bBtn, cBtn, dBtn, peekBtn, copyBtn, saveBtn, lockBtn, dropBtn;
     private GameButton selectedChoice = null;
     private GameButton answer = null;
     private int btnClickCtr = 0;
