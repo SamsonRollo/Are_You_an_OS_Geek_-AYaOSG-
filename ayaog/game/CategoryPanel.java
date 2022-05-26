@@ -57,13 +57,14 @@ public class CategoryPanel extends MenuPanel implements ActionListener{
         }
 
         QuestionCategory categ;
-        if(e.getActionCommand().equals("PMANAGE"))
+
+        if(e.getActionCommand().equalsIgnoreCase("processman"))
             categ = QuestionCategory.PROCESS_MANAGEMENT;
-        else if(e.getActionCommand().equals("MMANAGE"))
+        else if(e.getActionCommand().equalsIgnoreCase("memoryman"))
             categ = QuestionCategory.MEMORY_MANAGEMENT;
-        else if(e.getActionCommand().equals("SMANAGE"))
+        else if(e.getActionCommand().equalsIgnoreCase("storageman"))
             categ = QuestionCategory.STORAGE_MANAGEMENT;
-        else if(e.getActionCommand().equals("SECANDPRO"))
+        else if(e.getActionCommand().equalsIgnoreCase("secprotect"))
             categ = QuestionCategory.SECURITY_AND_PROTECTION;
         else
             categ = QuestionCategory.OVERVIEW;
@@ -78,6 +79,7 @@ public class CategoryPanel extends MenuPanel implements ActionListener{
         ayaog.remove(getPanel());
         ayaog.setAllBtnEnable(true);
         ayaog.loadGameScreen(type);
+        ayaog.revalidate();
         ayaog.updateUI();
     }
     

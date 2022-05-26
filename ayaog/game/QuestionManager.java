@@ -71,12 +71,13 @@ public class QuestionManager {
     }
 
     public boolean checkAnswer(String string){
-        if(type==QuestionType.TRUEFALSE)
+        if(type==QuestionType.TRUEFALSE){
             if(Boolean.parseBoolean(string)==trueFalseAnswer)
                 return true;
-        else
+        }else{
             if(string.equalsIgnoreCase(question.getAnswer()))
                 return true;
+        }
         return false;
     }
 

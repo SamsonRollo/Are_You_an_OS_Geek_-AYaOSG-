@@ -59,20 +59,20 @@ public class AYAOG extends OsirysGame implements MouseListener{
         el.loadExcel();
         qManager = new QuestionManager(new QuestionGenerator(el.getQuestions()));
 
+        level = new Level();
+        font = new Font("sans_serif", Font.BOLD, 20);
+
         questionArea = new JLabel("");
         questionArea.setBounds(174, 71, 495, 197);
         questionArea.setHorizontalTextPosition(JLabel.CENTER);
         questionArea.setVerticalTextPosition(JLabel.CENTER);
         questionArea.setFont(new Font("sans_serif", Font.PLAIN, 18));
 
-        level = new Level();
-        font = new Font("sans_serif", Font.BOLD, 20);
-
         peekBtn = new GameButton(26, 99, 90, 28);
         copyBtn = new GameButton(26, 135, 90, 28);
         saveBtn = new GameButton(26, 205, 90, 28);
         dropBtn = new GameButton(26, 241, 90, 28);
-        GameButton helpBtn = new GameButton(655, 5, 35, 35);
+        helpBtn = new GameButton(655, 5, 35, 35);
         lockBtn = new GameButton(596, 308, 84, 84);
 
         setLockEnabled(false);
@@ -95,7 +95,6 @@ public class AYAOG extends OsirysGame implements MouseListener{
                 if(btnClickCtr>=1){
                     Classmate cm = new Classmate(qManager);
                     changeAnswerFromClassmate(cm.getAnswer());
-
                     peekAlive = false;
                     peekBtn.setEnabled(false);
                 }
@@ -107,9 +106,9 @@ public class AYAOG extends OsirysGame implements MouseListener{
                 if(btnClickCtr>=1){
                     Classmate cm = new Classmate(qManager);
                     changeAnswerFromClassmate(cm.getAnswer());
-                    //lockin automatic
                     copyAlive = false;
                     copyBtn.setEnabled(false);
+                    lockAnswer();
                 }
             }
         });
@@ -139,31 +138,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
         lockBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    Thread lockThread = new Thread(new Runnable() {
-                        public void run(){
-                            //play drum roll
-                            
-                        }
-                    });
-                    lockThread.start();
-                    
-                    try {
-                        lockThread.join();
-                    }catch(InterruptedException e1){}
-                    
-                    if(answer==selectedChoice){
-                        System.out.println("COrrect");
-                        score.setGameScore(level.getPrize());
-                        level.incrementLevel();
-                        //play correct sound
-                        //update current winning, and prize pool
-                        //show correct panel,
-                    //thread for 2.5 sec then generate new question
-                    }else{
-                        score.setGameScore(level.getWinning(true));
-                        //play wrong sound
-                        //show gameOver panel
-                    }
+                    lockAnswer();
                 }
             }
         });
@@ -174,7 +149,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
         add(dropBtn);
         add(helpBtn);  
         add(lockBtn);
-        add(questionArea);     
+        add(questionArea);
 
         setAllBtnEnable(false);
 
@@ -183,12 +158,59 @@ public class AYAOG extends OsirysGame implements MouseListener{
         setComponentZOrder(cp, 0);
     }
 
+    public void lockAnswer(){
+        setAllBtnEnable(false);
+        Thread lockThread = new Thread(new Runnable() {
+            public void run(){
+
+                //play drum roll
+                try{
+                    Thread.sleep(2500);
+                }catch(Exception e){}
+            }
+        });
+        lockThread.start();
+        
+        try {
+            lockThread.join();
+        }catch(InterruptedException e1){}
+
+        String playerAnswer = selectedChoice.getText();
+
+        if(qManager.getQuestionType()==QuestionType.MULTIPLE){
+            playerAnswer = playerAnswer.substring(6, playerAnswer.length()-7);
+        }else{
+            playerAnswer = selectedChoice.getActionCommand();
+            if(playerAnswer.toLowerCase().contains("true"))
+                playerAnswer = "true";
+            else
+                playerAnswer = "false";
+        }
+
+        if(qManager.checkAnswer(playerAnswer)){
+            score.setGameScore(level.getPrize());
+            level.incrementLevel();
+            CategoryPanel cp = new CategoryPanel(getAYAOG());
+            getAYAOG().add(cp);
+            getAYAOG().setComponentZOrder(cp, 0);
+            getAYAOG().updateUI();
+        }else{
+            score.setGameScore(level.getWinning(true));
+            CertificatePanel cp = new CertificatePanel(getAYAOG(), false);
+            getAYAOG().add(cp);
+            getAYAOG().setComponentZOrder(cp, 0);
+            getAYAOG().updateUI();
+        }
+    }
+
     public void loadGameScreen(QuestionType type){
+        questionArea.setVerticalTextPosition(JLabel.CENTER);
         if(qManager.questionHasImage()){
             questionArea.setIcon(new ImageIcon(qManager.getImage()));
             questionArea.setVerticalTextPosition(JLabel.BOTTOM);
         }
         questionArea.setText("<html>"+qManager.getQuestion()+"</html>");
+        questionArea.validate();
         loadChoicesBtn(type);
     }
 
@@ -257,21 +279,18 @@ public class AYAOG extends OsirysGame implements MouseListener{
     }
     
     public void removeCurrentQuestionSetup(){
-        questionArea.setText("");
         questionArea.setIcon(null);
-        questionArea.setVerticalTextPosition(JLabel.CENTER);
-        questionArea.revalidate();
 
         for(Component c : getAYAOG().getComponents()){
             if(c instanceof GameButton){
                 GameButton btn = (GameButton)c;
-                if(btn.getActionCommand().equalsIgnoreCase("mchoice")){
+                if(btn.getActionCommand().toLowerCase().contains("mchoice")){
                     getAYAOG().remove(btn);
                     continue;
                 }
             
-                if(btn.getActionCommand().equalsIgnoreCase("truechoice") 
-                    || btn.getActionCommand().equalsIgnoreCase("falseChoice"))
+                if(btn.getActionCommand().toLowerCase().contains("truechoice") 
+                    || btn.getActionCommand().toLowerCase().contains("falsechoice"))
                     getAYAOG().remove(btn);
             }
         }
@@ -342,6 +361,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
             peekBtn.setEnabled(false);
         if(!copyAlive)
             peekBtn.setEnabled(false);
+        helpBtn.setEnabled(true);
     }
 
     public QuestionManager getQuestionManager(){
@@ -398,9 +418,8 @@ public class AYAOG extends OsirysGame implements MouseListener{
     @Override
     public void mouseReleased(MouseEvent arg0) {}
 
-    private GameButton trueBtn, falseBtn, peekBtn, copyBtn, saveBtn, lockBtn, dropBtn;
+    private GameButton trueBtn, falseBtn, peekBtn, copyBtn, saveBtn, lockBtn, dropBtn, helpBtn;
     private GameButton selectedChoice = null;
-    private GameButton answer = null;
     private ButtonGroup choicesGroup;
     private boolean peekAlive =true, copyAlive = true;
     private int btnClickCtr = 0;

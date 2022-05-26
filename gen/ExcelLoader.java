@@ -2,6 +2,7 @@ package gen;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -12,7 +13,6 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook; 
 
 public class ExcelLoader{
-    private File excelFile;
     private String path;
     private ArrayList<Question> questions;
 
@@ -22,10 +22,10 @@ public class ExcelLoader{
     }
 
     public void loadExcel(){
-        excelFile = new File(this.getClass().getClassLoader().getResource(path).getFile());
-        
+        URL url = this.getClass().getClassLoader().getResource(path);
+
         try {
-            FileInputStream fis = new FileInputStream(excelFile);
+            FileInputStream fis = new FileInputStream(new File(url.toURI()));
             XSSFWorkbook workbook = new XSSFWorkbook(fis);
             XSSFSheet sheet = workbook.getSheetAt(0);
             retrieveData(sheet);
