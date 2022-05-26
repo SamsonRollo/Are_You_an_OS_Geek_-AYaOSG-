@@ -27,7 +27,7 @@ public class Question {
     }
 
     public void setCategory(String category){
-        category.replaceAll(" ", "_");
+        category = category.replaceAll(" ", "_");
         if(category.equalsIgnoreCase(QuestionCategory.OVERVIEW.name()))
             this.category = QuestionCategory.OVERVIEW;
         else if(category.equalsIgnoreCase(QuestionCategory.PROCESS_MANAGEMENT.name()))
@@ -90,6 +90,12 @@ public class Question {
             this.image = il.getBuffImage();
         }
         return this.image;
+    }
+
+    public boolean hasImage(){
+        if(image==null)
+            return false;
+        return true;
     }
 
     public void setTaken(boolean taken){

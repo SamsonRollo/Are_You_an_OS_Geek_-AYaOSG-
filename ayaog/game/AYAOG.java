@@ -1,6 +1,7 @@
 package ayaog.game;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -10,13 +11,16 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Enumeration;
+
+import javax.swing.AbstractButton;
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 
 import gen.ExcelLoader;
 import gen.GameButton;
 import gen.ImageLoader;
-import gen.Question;
-import gen.QuestionCategory;
 import gen.QuestionGenerator;
 import gen.Score;
 
@@ -29,10 +33,9 @@ public class AYAOG extends OsirysGame implements MouseListener{
     private Score score;
     private MainClass mainClass;
     private Font font;
-    private QuestionType type;
-    private QuestionCategory categ;
     private boolean start = true;
-    private QuestionGenerator qGen;
+    private QuestionManager qManager;
+    private Level level;
 
     public AYAOG(MainClass mainClass, Score score){
         this.mainClass = mainClass;
@@ -54,8 +57,15 @@ public class AYAOG extends OsirysGame implements MouseListener{
 
         ExcelLoader el = new ExcelLoader(excelPath);
         el.loadExcel();
-        qGen = new QuestionGenerator(el.getQuestions());
-        
+        qManager = new QuestionManager(new QuestionGenerator(el.getQuestions()));
+
+        questionArea = new JLabel("");
+        questionArea.setBounds(174, 71, 495, 197);
+        questionArea.setHorizontalTextPosition(JLabel.CENTER);
+        questionArea.setVerticalTextPosition(JLabel.CENTER);
+        questionArea.setFont(new Font("sans_serif", Font.PLAIN, 18));
+
+        level = new Level();
         font = new Font("sans_serif", Font.BOLD, 20);
 
         peekBtn = new GameButton(26, 99, 90, 28);
@@ -73,11 +83,17 @@ public class AYAOG extends OsirysGame implements MouseListener{
         autoSetIcons(dropBtn, "drop");
         autoSetIcons(helpBtn, "help");
         autoSetIcons(lockBtn, "lockin");
+
+        peekBtn.addMouseListener(this);
+        copyBtn.addMouseListener(this);
+        saveBtn.addMouseListener(this);
+        dropBtn.addMouseListener(this);
+        lockBtn.addMouseListener(this);
         
         peekBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    //peek at the answer but not lock
+                    
                 }
             }
         });
@@ -108,22 +124,35 @@ public class AYAOG extends OsirysGame implements MouseListener{
 
         helpBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
-               generateQuestion();
+               
             }
         });
 
         lockBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    //lock the answer and create drumroll thread and join to main thread
-                    //Thread for sound
+                    Thread lockThread = new Thread(new Runnable() {
+                        public void run(){
+                            //play drum roll
+                            
+                        }
+                    });
+                    lockThread.start();
+                    
+                    try {
+                        lockThread.join();
+                    }catch(InterruptedException e1){}
+                    
                     if(answer==selectedChoice){
                         System.out.println("COrrect");
+                        score.setGameScore(level.getPrize());
+                        level.incrementLevel();
                         //play correct sound
                         //update current winning, and prize pool
                         //show correct panel,
                     //thread for 2.5 sec then generate new question
                     }else{
+                        score.setGameScore(level.getWinning(true));
                         //play wrong sound
                         //show gameOver panel
                     }
@@ -136,7 +165,8 @@ public class AYAOG extends OsirysGame implements MouseListener{
         add(saveBtn);
         add(dropBtn);
         add(helpBtn);  
-        add(lockBtn);     
+        add(lockBtn);
+        add(questionArea);     
 
         setAllBtnEnable(false);
 
@@ -145,25 +175,23 @@ public class AYAOG extends OsirysGame implements MouseListener{
         setComponentZOrder(cp, 0);
     }
 
-    public void generateQuestion(){
-        if(!start)
-            removeChoices();
-
-        start = false;
-        setLockEnabled(false);
-
-        Random rand = new Random();
-        type = QuestionType.MULTIPLE;
-
-        if((rand.nextInt(100)+1)%5==0)
-            type = QuestionType.TRUEFALSE;
-
-        //select from a pool of questions in xlxs
-
-        loadChoicesBtn(type);   
+    public void loadGameScreen(QuestionType type){
+        if(qManager.questionHasImage()){
+            questionArea.setIcon(new ImageIcon(qManager.getImage()));
+            questionArea.setVerticalTextPosition(JLabel.BOTTOM);
+        }
+        questionArea.setText("<html>"+qManager.getQuestion()+"</html>");
+        loadChoicesBtn(type);
     }
 
     public void loadChoicesBtn(QuestionType type){
+        if(!start)
+            removeCurrentQuestionSetup();
+
+        start = false;
+        setLockEnabled(false);
+        
+        choicesGroup = new ButtonGroup();
         
         if(type == QuestionType.TRUEFALSE){
             trueBtn = new GameButton(58, 338, 219, 74);
@@ -174,12 +202,11 @@ public class AYAOG extends OsirysGame implements MouseListener{
 
             trueBtn.addMouseListener(this);
             falseBtn.addMouseListener(this);
-
+        
             trueBtn.addActionListener(new ActionListener(){
                 public void actionPerformed(ActionEvent e){
                     if(btnClickCtr>=1){
                        changeSelected(selectedChoice, trueBtn);
-                        //lockansert
                     }
                 }
             });
@@ -192,81 +219,56 @@ public class AYAOG extends OsirysGame implements MouseListener{
                 }
             });
             
+            choicesGroup.add(trueBtn);
+            choicesGroup.add(falseBtn);
+
             getAYAOG().add(trueBtn);
             getAYAOG().add(falseBtn);
         }else{
-            int yMul = 49;
-            aBtn = new GameButton(17, 305, 553, 41);
-            bBtn = new GameButton(17, 305+yMul, 553, 41);
-            cBtn = new GameButton(17, 305+yMul*2, 553, 41);
-            dBtn = new GameButton(17, 305+yMul*3, 553, 41);
+            ArrayList<String> choices = qManager.getChoices();
+            int yMul = 49, yCtr=0;
 
-            autoSetIcons(aBtn, "mchoice");
-            autoSetIcons(bBtn, "mchoice");
-            autoSetIcons(cBtn, "mchoice");
-            autoSetIcons(dBtn, "mchoice");
+            for(String choice : choices){
+                GameButton button = new GameButton(17, 305+yMul*yCtr, 553, 41);
+                autoSetIcons(button, "mchoice");
+                addBtnChoiceText(button, choice);
 
-            addBtnChoiceText(aBtn, "HELLO");
-            addBtnChoiceText(bBtn, "Hi");
-            addBtnChoiceText(cBtn, "Hey");
-            addBtnChoiceText(dBtn, "LOOOO");
-
-            aBtn.addMouseListener(this);
-            bBtn.addMouseListener(this);
-            cBtn.addMouseListener(this);
-            dBtn.addMouseListener(this);
-
-            aBtn.addActionListener(new ActionListener(){
-                public void actionPerformed(ActionEvent e){
-                    if(btnClickCtr>=1){
-                       changeSelected(selectedChoice, aBtn);
+                button.addMouseListener(this);
+                button.addActionListener(new ActionListener(){
+                    public void actionPerformed(ActionEvent e){
+                        if(btnClickCtr>=1){
+                            if(selectedChoice!=null)
+                                System.out.println(selectedChoice.getText());
+                           changeSelected(selectedChoice, button);
+                        }
                     }
-                }
-            });
-
-            bBtn.addActionListener(new ActionListener(){
-                public void actionPerformed(ActionEvent e){
-                    if(btnClickCtr>=1){
-                       changeSelected(selectedChoice, bBtn);
-                    }
-                }
-            });
-
-            cBtn.addActionListener(new ActionListener(){
-                public void actionPerformed(ActionEvent e){
-                    if(btnClickCtr>=1){
-                        changeSelected(selectedChoice, cBtn);
-                    }
-                }
-            });
-
-            dBtn.addActionListener(new ActionListener(){
-                public void actionPerformed(ActionEvent e){
-                    if(btnClickCtr>=1){
-                        changeSelected(selectedChoice, dBtn);
-                        //lockansert
-                    }
-                }
-            });
-
-            
-            getAYAOG().add(aBtn);
-            getAYAOG().add(bBtn);
-            getAYAOG().add(cBtn);
-            getAYAOG().add(dBtn);
+                });
+                choicesGroup.add(button);
+                getAYAOG().add(button);
+                yCtr++;
+            }
         }
         getAYAOG().updateUI();
     }
     
-    public void removeChoices(){
-        if(type==QuestionType.MULTIPLE){
-            getAYAOG().remove(aBtn);
-            getAYAOG().remove(bBtn);
-            getAYAOG().remove(cBtn);
-            getAYAOG().remove(dBtn);
-        }else{
-            getAYAOG().remove(trueBtn);
-            getAYAOG().remove(falseBtn);
+    public void removeCurrentQuestionSetup(){
+        questionArea.setText("");
+        questionArea.setIcon(null);
+        questionArea.setVerticalTextPosition(JLabel.CENTER);
+        questionArea.revalidate();
+
+        for(Component c : getAYAOG().getComponents()){
+            if(c instanceof GameButton){
+                GameButton btn = (GameButton)c;
+                if(btn.getActionCommand().equalsIgnoreCase("mchoice")){
+                    getAYAOG().remove(btn);
+                    continue;
+                }
+            
+                if(btn.getActionCommand().equalsIgnoreCase("truechoice") 
+                    || btn.getActionCommand().equalsIgnoreCase("falseChoice"))
+                    getAYAOG().remove(btn);
+            }
         }
         selectedChoice = null;
     }
@@ -278,9 +280,12 @@ public class AYAOG extends OsirysGame implements MouseListener{
         String newStr = newBtn.getActionCommand().toLowerCase();
         if(currentBtn!=null){
             String curStr = currentBtn.getActionCommand().toLowerCase();
+            System.out.println("cure before "+curStr);
             curStr = curStr.substring(0, curStr.length()-4);
             autoSetIcons(currentBtn, curStr);
+            System.out.println("curAfter "+curStr);
         }
+        System.out.println("new "+newStr);
         autoSetIcons(newBtn, newStr+"lock");
         this.selectedChoice = newBtn;
         getAYAOG().updateUI();
@@ -291,36 +296,20 @@ public class AYAOG extends OsirysGame implements MouseListener{
     }
 
     public void addBtnChoiceText(GameButton button, String text){
-        button.setText(text);
+        button.setText("<html>"+text+"</html");
         button.setHorizontalTextPosition(GameButton.CENTER);
         button.setVerticalTextPosition(GameButton.CENTER);
     }
 
     public void setAllBtnEnable(boolean status){
-        lockBtn.setEnabled(status);
-        peekBtn.setEnabled(status);
-        copyBtn.setEnabled(status);
-        saveBtn.setEnabled(status);
-        dropBtn.setEnabled(status);
-        lockBtn.setEnabled(status);
-        if(trueBtn!=null){
-            trueBtn.setEnabled(status);
-            falseBtn.setEnabled(status);
-        }
-        if(aBtn!=null){
-            aBtn.setEnabled(status);
-            bBtn.setEnabled(status);
-            cBtn.setEnabled(status);
-            dBtn.setEnabled(status);
-        }
+        Component[] components = getAYAOG().getComponents();
+        for(Component c : components)
+            if(c instanceof GameButton)
+                ((GameButton)c).setEnabled(status);
     }
 
-    public void setCategory(QuestionCategory categ){
-        this.categ = categ;
-    }
-
-    public QuestionCategory getCategory(){
-        return this.categ;
+    public QuestionManager getQuestionManager(){
+        return this.qManager;
     }
 
     public AYAOG getAYAOG(){
@@ -340,11 +329,23 @@ public class AYAOG extends OsirysGame implements MouseListener{
         g.setColor(Color.black);
         g.setFont(font);
         g.drawString(String.valueOf(score.getGameScore()), 61, 43);
+        g.drawString(String.valueOf(level.getPrize()), 348, 43);
     }
 
     @Override
     public void mouseClicked(MouseEvent arg0) {
         btnClickCtr++;
+        if(btnClickCtr>1){
+            GameButton gb = (GameButton) arg0.getSource();
+            
+            for(Enumeration<AbstractButton> buttons = choicesGroup.getElements(); buttons.hasMoreElements();){
+                GameButton btn = (GameButton)buttons.nextElement();
+                if(gb==btn){
+                    selectedChoice = gb;
+                    return;
+                }
+            }
+        }
     }
 
     @Override
@@ -361,8 +362,10 @@ public class AYAOG extends OsirysGame implements MouseListener{
     @Override
     public void mouseReleased(MouseEvent arg0) {}
 
-    private GameButton trueBtn, falseBtn, aBtn, bBtn, cBtn, dBtn, peekBtn, copyBtn, saveBtn, lockBtn, dropBtn;
+    private GameButton trueBtn, falseBtn, peekBtn, copyBtn, saveBtn, lockBtn, dropBtn;
     private GameButton selectedChoice = null;
     private GameButton answer = null;
+    private ButtonGroup choicesGroup;
     private int btnClickCtr = 0;
+    private JLabel questionArea;
 }

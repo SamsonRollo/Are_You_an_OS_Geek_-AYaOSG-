@@ -1,6 +1,7 @@
 package ayaog.game;
 
 import java.awt.event.ActionListener;
+import java.util.Random;
 import java.awt.event.ActionEvent;
 
 import gen.GameButton;
@@ -49,20 +50,34 @@ public class CategoryPanel extends MenuPanel implements ActionListener{
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        //if qManager question are empty report an error
+        if(ayaog.getQuestionManager().getQuestionGenerator().isQuestionsNull()){
+            System.out.println("No questions availabel");
+            return;
+        }
+
+        QuestionCategory categ;
         if(e.getActionCommand().equals("PMANAGE"))
-            ayaog.setCategory(QuestionCategory.PROCESS_MANAGEMENT);
+            categ = QuestionCategory.PROCESS_MANAGEMENT;
         else if(e.getActionCommand().equals("MMANAGE"))
-            ayaog.setCategory(QuestionCategory.MEMORY_MANAGEMENT);
+            categ = QuestionCategory.MEMORY_MANAGEMENT;
         else if(e.getActionCommand().equals("SMANAGE"))
-            ayaog.setCategory(QuestionCategory.STORAGE_MANAGEMENT);
+            categ = QuestionCategory.STORAGE_MANAGEMENT;
         else if(e.getActionCommand().equals("SECANDPRO"))
-            ayaog.setCategory(QuestionCategory.SECURITY_AND_PROTECTION);
+            categ = QuestionCategory.SECURITY_AND_PROTECTION;
         else
-            ayaog.setCategory(QuestionCategory.OVERVIEW);
+            categ = QuestionCategory.OVERVIEW;
+
+        Random rand = new Random();
+        QuestionType type = QuestionType.MULTIPLE;
+
+        if((rand.nextInt(100)+1)%5==0)
+            type = QuestionType.TRUEFALSE;
         
+        ayaog.getQuestionManager().formulateQuestion(categ, type);
         ayaog.remove(getPanel());
         ayaog.setAllBtnEnable(true);
-        ayaog.setLockEnabled(false);
+        ayaog.loadGameScreen(type);
         ayaog.updateUI();
     }
     

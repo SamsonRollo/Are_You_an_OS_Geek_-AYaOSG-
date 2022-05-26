@@ -54,9 +54,9 @@ public class ExcelLoader{
                 if(qCtr==0)
                     question.setId(cellVal);
                 else if(qCtr==1)
-                    question.setQuestion(cellVal);
-                else if(qCtr==2)
                     question.setCategory(cellVal);
+                else if(qCtr==2)
+                    question.setQuestion(cellVal);
                 else if(qCtr>2 && qCtr<7)
                     question.addChoice(cellVal);
                 else if(qCtr==7)
