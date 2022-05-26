@@ -6,11 +6,11 @@ import java.util.Random;
 public class Classmate {
     private String answer;
     
-    public Classmate(QuestionType type, QuestionManager qMan){ //66 percent or 47 percent, 60 percent to be 66 percent
-        selectAnswer(type, qMan);
+    public Classmate(QuestionManager qMan){ //66 percent or 47 percent, 60 percent to be 66 percent
+        selectAnswer(qMan);
     }
 
-    private void selectAnswer(QuestionType type, QuestionManager qMan){
+    private void selectAnswer(QuestionManager qMan){
         Random rand = new Random();
         int randNum = rand.nextInt(100);
         int bound1 = 7, bound2 = 3, bound3 = 17; //44 percent
@@ -24,20 +24,20 @@ public class Classmate {
         if(randNum%bound1==0
             || randNum%bound2==0
             || randNum%bound3==0)
-            selectCorrect(type, qMan);
+            selectCorrect(qMan);
         else
-            selectOther(type, qMan);
+            selectOther(qMan);
     }
 
-    private void selectCorrect(QuestionType type, QuestionManager qMan){
-        if(type==QuestionType.TRUEFALSE)
+    private void selectCorrect(QuestionManager qMan){
+        if(qMan.getQuestionType()==QuestionType.TRUEFALSE)
             answer = String.valueOf(qMan.getBooleanAnswer());
         else
             answer = qMan.getStringAnswer();
     }
 
-    private void selectOther(QuestionType type, QuestionManager qMan){
-        if(type==QuestionType.TRUEFALSE)
+    private void selectOther(QuestionManager qMan){
+        if(qMan.getQuestionType()==QuestionType.TRUEFALSE)
             answer = String.valueOf(!qMan.getBooleanAnswer());
         else{
             ArrayList<String> otherChoices = new ArrayList<>();

@@ -93,7 +93,11 @@ public class AYAOG extends OsirysGame implements MouseListener{
         peekBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    
+                    Classmate cm = new Classmate(qManager);
+                    changeAnswerFromClassmate(cm.getAnswer());
+
+                    peekAlive = false;
+                    peekBtn.setEnabled(false);
                 }
             }
         });
@@ -101,7 +105,11 @@ public class AYAOG extends OsirysGame implements MouseListener{
         copyBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    //copy and lock answer
+                    Classmate cm = new Classmate(qManager);
+                    changeAnswerFromClassmate(cm.getAnswer());
+                    //lockin automatic
+                    copyAlive = false;
+                    copyBtn.setEnabled(false);
                 }
             }
         });
@@ -236,11 +244,8 @@ public class AYAOG extends OsirysGame implements MouseListener{
                 button.addMouseListener(this);
                 button.addActionListener(new ActionListener(){
                     public void actionPerformed(ActionEvent e){
-                        if(btnClickCtr>=1){
-                            if(selectedChoice!=null)
-                                System.out.println(selectedChoice.getText());
+                        if(btnClickCtr>=1)
                            changeSelected(selectedChoice, button);
-                        }
                     }
                 });
                 choicesGroup.add(button);
@@ -280,12 +285,9 @@ public class AYAOG extends OsirysGame implements MouseListener{
         String newStr = newBtn.getActionCommand().toLowerCase();
         if(currentBtn!=null){
             String curStr = currentBtn.getActionCommand().toLowerCase();
-            System.out.println("cure before "+curStr);
             curStr = curStr.substring(0, curStr.length()-4);
             autoSetIcons(currentBtn, curStr);
-            System.out.println("curAfter "+curStr);
         }
-        System.out.println("new "+newStr);
         autoSetIcons(newBtn, newStr+"lock");
         this.selectedChoice = newBtn;
         getAYAOG().updateUI();
@@ -296,9 +298,39 @@ public class AYAOG extends OsirysGame implements MouseListener{
     }
 
     public void addBtnChoiceText(GameButton button, String text){
-        button.setText("<html>"+text+"</html");
+        button.setText("<html>"+text+"</html>");
         button.setHorizontalTextPosition(GameButton.CENTER);
         button.setVerticalTextPosition(GameButton.CENTER);
+    }
+
+    public void changeAnswerFromClassmate(String cmAnswer){
+        for(Component c : getAYAOG().getComponents()){
+            if(c instanceof GameButton){
+                GameButton btn = (GameButton)c;
+
+                if(qManager.getQuestionType()==QuestionType.MULTIPLE){
+                    String btnText = btn.getText();
+                    if(btnText.length()>13){
+                        btnText = btnText.substring(6, btnText.length()-7);
+
+                        if(btnText.equalsIgnoreCase(cmAnswer)){
+                            changeSelected(selectedChoice, btn);
+                            selectedChoice = btn;
+                            break;
+                        }
+                    }
+                }else{
+                    String btnCommand = btn.getActionCommand();
+                    if(btnCommand.toUpperCase().contains(cmAnswer.toUpperCase())){
+                        changeSelected(selectedChoice, btn);
+                        selectedChoice = btn;
+                        break;
+                    }
+
+                }
+            }
+        }
+        getAYAOG().updateUI();
     }
 
     public void setAllBtnEnable(boolean status){
@@ -306,6 +338,10 @@ public class AYAOG extends OsirysGame implements MouseListener{
         for(Component c : components)
             if(c instanceof GameButton)
                 ((GameButton)c).setEnabled(status);
+        if(!peekAlive)
+            peekBtn.setEnabled(false);
+        if(!copyAlive)
+            peekBtn.setEnabled(false);
     }
 
     public QuestionManager getQuestionManager(){
@@ -366,6 +402,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
     private GameButton selectedChoice = null;
     private GameButton answer = null;
     private ButtonGroup choicesGroup;
+    private boolean peekAlive =true, copyAlive = true;
     private int btnClickCtr = 0;
     private JLabel questionArea;
 }
