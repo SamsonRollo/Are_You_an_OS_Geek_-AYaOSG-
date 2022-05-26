@@ -18,6 +18,11 @@ public class Level {
         updatePrize();
     }
 
+    public void setLevel(int level){
+        this.level = level;
+        updatePrize();
+    }
+
     public int getWinning(boolean lose){
         if(level<5)
             return 0;
@@ -62,6 +67,10 @@ public class Level {
                 prize = 1000000;
                 break;
         }
+    }
+
+    public int getLevel(){
+        return this.level;
     }
     
 }

@@ -1,43 +1,27 @@
 package gen;
 
-public class MusicPlayer implements Runnable{
-    private String path;
+import java.applet.Applet;
+import java.applet.AudioClip;
+import java.net.URL;
 
-    public MusicPlayer(){}
+public class MusicPlayer{
+    private AudioClip sound;
 
-    public void setMusicPath(String path){
-        this.path = path;
+    public MusicPlayer(String path){
+        URL url = this.getClass().getClassLoader().getResource("file:"+path);
+        sound = Applet.newAudioClip(url);
     }
 
-    @Override
-    public void run() {
-
+    public void play(){
+        sound.play();
     }
-    
+
+    public void loop(){
+        sound.play();
+    }
+
+    public void stop(){
+        sound.stop();
+    }
+
 }
-
-// import java.applet.AudioClip;
-// import java.net.MalformedURLException;
-
-// public class Tunog{
-// 	private AudioClip sample;
-// 	Tunog(String fname){
-// 		try{
-// 			sample = java.applet.Applet.newAudioClip(new java.net.URL("file:"+fname));
-// 		    }
-// 		 catch(MalformedURLException e){
-// 		 	e.printStackTrace();
-// 			 }
-// 		}
-// 	public void play(){
-// 		sample.stop();
-// 		sample.play();
-// 		}
-// 	public void stop(){
-// 		sample.stop();
-// 		}
-// 	public void loop(){
-// 		sample.stop();
-// 		sample.loop();
-// 		}
-// 	}

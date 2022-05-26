@@ -34,7 +34,7 @@ public class QuestionManager {
         String assumption = question.getChoiceAt(new Random().nextInt(question.getChoices().size()));
 
         trueFalseAnswer = assumption.equalsIgnoreCase(question.getAnswer()) ? true : false;
-        q = q+" The answer is "+assumption;
+        q = q+" The answer is "+assumption+".";
 
         return q;
     }
@@ -68,6 +68,26 @@ public class QuestionManager {
 
     public String getStringAnswer(){
         return question.getAnswer();
+    }
+
+    public String getId(){
+        return question.getId();
+    }
+
+    public void setState(int id){
+        this.question = generator.getQuestionAt(id-1);
+    }
+
+    public void setBolAnswer(boolean ans){
+        this.trueFalseAnswer = ans;
+    }
+
+    public void setQuestionType(QuestionType type){
+        this.type = type;
+    }
+
+    public void setManualQuestion(String formQ){
+        this.formulatedQuestion = formQ;
     }
 
     public boolean checkAnswer(String string){

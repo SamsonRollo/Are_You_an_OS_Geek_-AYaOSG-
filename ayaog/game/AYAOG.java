@@ -12,6 +12,8 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -19,8 +21,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import gen.ExcelLoader;
+import gen.FileManager;
 import gen.GameButton;
 import gen.ImageLoader;
+import gen.MenuPanel;
 import gen.QuestionGenerator;
 import gen.Score;
 
@@ -35,6 +39,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
     private Font font;
     private boolean start = true;
     private QuestionManager qManager;
+    private FileManager fileManager;
     private Level level;
 
     public AYAOG(MainClass mainClass, Score score){
@@ -48,6 +53,8 @@ public class AYAOG extends OsirysGame implements MouseListener{
 
     public void loadGame(){
         loadElements();
+        fileManager.load(qManager, score, level);
+        updateUI();
     }
 
     public void loadElements(){
@@ -58,6 +65,7 @@ public class AYAOG extends OsirysGame implements MouseListener{
         ExcelLoader el = new ExcelLoader(excelPath);
         el.loadExcel();
         qManager = new QuestionManager(new QuestionGenerator(el.getQuestions()));
+        fileManager = new FileManager(getAYAOG());
 
         level = new Level();
         font = new Font("sans_serif", Font.BOLD, 20);
@@ -104,10 +112,10 @@ public class AYAOG extends OsirysGame implements MouseListener{
         copyBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    Classmate cm = new Classmate(qManager);
-                    changeAnswerFromClassmate(cm.getAnswer());
                     copyAlive = false;
                     copyBtn.setEnabled(false);
+                    Classmate cm = new Classmate(qManager);
+                    changeAnswerFromClassmate(cm.getAnswer());
                     lockAnswer();
                 }
             }
@@ -116,7 +124,9 @@ public class AYAOG extends OsirysGame implements MouseListener{
         saveBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    //show gamecome with be back soon, reminder to be back before quiting the game bundle
+                    fileManager.saveAYAOG(qManager, score.getGameScore(), level.getLevel());
+                    CertificatePanel cp = new CertificatePanel(getAYAOG(), false, "save");
+                    setFloater(cp);
                 }
             }
         });
@@ -124,7 +134,10 @@ public class AYAOG extends OsirysGame implements MouseListener{
         dropBtn.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e){
                 if(btnClickCtr>=1){
-                    //show gameover with anti_certificate and exit
+                    score.incrementTotalScore(score.getGameScore());
+                    fileManager.destroySave();
+                    CertificatePanel cp = new CertificatePanel(getAYAOG(), false, "drop");
+                    setFloater(cp);
                 }
             }
         });
@@ -189,18 +202,30 @@ public class AYAOG extends OsirysGame implements MouseListener{
 
         if(qManager.checkAnswer(playerAnswer)){
             score.setGameScore(level.getPrize());
-            level.incrementLevel();
-            CategoryPanel cp = new CategoryPanel(getAYAOG());
-            getAYAOG().add(cp);
-            getAYAOG().setComponentZOrder(cp, 0);
-            getAYAOG().updateUI();
+            if(level.getLevel()<11){
+                level.incrementLevel();
+                CategoryPanel cp = new CategoryPanel(getAYAOG());
+                setFloater(cp);
+            }else{ //win
+                CertificatePanel cp = new CertificatePanel(getAYAOG(), true, "win");
+                setFloater(cp);
+            }
         }else{
             score.setGameScore(level.getWinning(true));
-            CertificatePanel cp = new CertificatePanel(getAYAOG(), false);
-            getAYAOG().add(cp);
-            getAYAOG().setComponentZOrder(cp, 0);
-            getAYAOG().updateUI();
+            CertificatePanel cp = new CertificatePanel(getAYAOG(), false, "lose");
+            setFloater(cp);
         }
+    }
+
+    public void resetGame(){
+        peekAlive = true;
+        copyAlive = true;
+        setAllBtnEnable(true);
+        setLockEnabled(false);
+        score.setTotalScore(score.getGameScore());
+        score.resetCurrentGameScore();
+        level = new Level();
+        removeCurrentQuestionSetup();
     }
 
     public void loadGameScreen(QuestionType type){
@@ -212,6 +237,11 @@ public class AYAOG extends OsirysGame implements MouseListener{
         questionArea.setText("<html>"+qManager.getQuestion()+"</html>");
         questionArea.validate();
         loadChoicesBtn(type);
+
+        if(level.getLevel()>=11){
+            peekAlive=false;
+            copyAlive=false;
+        }
     }
 
     public void loadChoicesBtn(QuestionType type){
@@ -360,12 +390,22 @@ public class AYAOG extends OsirysGame implements MouseListener{
         if(!peekAlive)
             peekBtn.setEnabled(false);
         if(!copyAlive)
-            peekBtn.setEnabled(false);
+            copyBtn.setEnabled(false);
         helpBtn.setEnabled(true);
+    }
+
+    public void setFloater(MenuPanel panel){
+        getAYAOG().add(panel);
+        getAYAOG().setComponentZOrder(panel, 0);
+        getAYAOG().updateUI();
     }
 
     public QuestionManager getQuestionManager(){
         return this.qManager;
+    }
+
+    public FileManager getFileManager(){
+        return this.fileManager;
     }
 
     public AYAOG getAYAOG(){
@@ -375,7 +415,23 @@ public class AYAOG extends OsirysGame implements MouseListener{
     public MainClass getMainClass(){
         return this.mainClass;
     }
+
+    public boolean getPeek(){
+        return this.peekAlive;
+    }
+
+    public void setPeek(boolean status){
+        this.peekAlive = status;
+    }
   
+    public boolean getCopy(){
+        return this.copyAlive;
+    }
+
+    public void setCopy(boolean status){
+        this.copyAlive = status;
+    }
+
     @Override
     public void paintComponent(Graphics g){
         super.paintComponent(g);
@@ -402,6 +458,14 @@ public class AYAOG extends OsirysGame implements MouseListener{
                 }
             }
         }
+        
+        Timer t = new Timer("btnDC", false);
+        t.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                btnClickCtr = 0;
+            }
+        }, 250);
     }
 
     @Override

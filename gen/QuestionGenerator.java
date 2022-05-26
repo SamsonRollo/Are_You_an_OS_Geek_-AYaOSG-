@@ -42,4 +42,8 @@ public class QuestionGenerator {
         return false;
     }
 
+    public Question getQuestionAt(int id){
+        return questions.get(id);
+    }
+
 }

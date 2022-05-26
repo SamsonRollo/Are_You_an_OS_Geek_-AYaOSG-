@@ -1,9 +1,9 @@
 package gen;
 
+import java.util.ArrayList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -20,6 +20,21 @@ public class ExcelLoader{
         this.path = path;
         this.questions = new ArrayList<Question>();
     }
+
+    // public void loadExcel(){
+    //     for(int i=0; i<6; i++){
+    //         Question q = new Question();
+    //         q.setId(String.valueOf(i));
+    //         q.setQuestion("Baho lubot");
+    //         q.addChoice("Kale");
+    //         q.addChoice("Kaleba");
+    //         q.addChoice("Kalenf");
+    //         q.addChoice("Kalerw");
+    //         q.setAnswer("Kale");
+    //         q.setCategory("Process Management");
+    //         questions.add(q);
+    //     }
+    // }
 
     public void loadExcel(){
         URL url = this.getClass().getClassLoader().getResource(path);
@@ -60,7 +75,7 @@ public class ExcelLoader{
                 else if(qCtr>2 && qCtr<7)
                     question.addChoice(cellVal);
                 else if(qCtr==7)
-                    question.setAnswer(cellVal);
+                    question.addChoice(cellVal);
                 else if(qCtr==8)
                     question.setImagePath(cellVal);
                 qCtr++;
